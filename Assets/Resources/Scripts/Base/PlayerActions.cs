@@ -66,6 +66,7 @@ namespace Witchgame
             HandleMovement();
             HandleJumpInput();
             HandleCasting();
+            UpdateAnimations();
         }
 
         private void FixedUpdate()
@@ -103,8 +104,11 @@ namespace Witchgame
             if (groundChecker.isGrounded)
             {
                 coyoteTimeCounter = coyoteTime;
-                isJumping = false;
-                isFalling = false;
+                if (isFalling)
+                {
+                    isFalling = false;
+                    isJumping = false;
+                }
             }
             else
             {
@@ -129,8 +133,6 @@ namespace Witchgame
                 jumpBufferCounter = 0f;
                 isJumping = true;
                 isFalling = false;
-                anim.SetBool("isJumping", true);
-                anim.SetBool("isFalling", false);
             }
 
             if (!inputController.jump && rb.velocity.y > 0)
@@ -142,8 +144,6 @@ namespace Witchgame
             {
                 isFalling = true;
                 isJumping = false;
-                anim.SetBool("isJumping", false);
-                anim.SetBool("isFalling", true);
             }
         }
 
@@ -181,5 +181,10 @@ namespace Witchgame
             }
         }
 
+        private void UpdateAnimations()
+        {
+            anim.SetBool("isJumping", isJumping);
+            anim.SetBool("isFalling", isFalling);
+        }
     }
 }
