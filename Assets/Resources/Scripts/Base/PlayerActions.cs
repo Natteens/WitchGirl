@@ -13,12 +13,13 @@ namespace Witchgame
         public float decelerationSpeed = 2f;
 
         [Header("Jump Settings")]
-        public float jumpHeight = 5f;
-        public float jumpSpeed = 10f;
-        public float gravityForce = 20f;
+        public float jumpHeight = 2f;
+        public float jumpTimeToApex = 0.4f;
+        public float jumpForceMultiplier = 1.5f;
+        public float fallMultiplier = 2.5f;
+        public float lowJumpMultiplier = 2f;
         public float coyoteTime = 0.2f;
         public float jumpBufferTime = 0.1f;
-        public float quickFallMultiplier = 2f;
 
         [Header("Other Settings")]
         public bool canJump = true;
@@ -35,11 +36,13 @@ namespace Witchgame
         private bool isJumping;
         private bool isFalling;
         private bool isCastingSpell;
+        private float jumpVelocity;
+        private float gravity;
 
         private void Awake()
         {
             GetComponents();
-            CalculateJumpVelocity();
+            CalculateJumpParameters();
         }
 
         private void GetComponents()
@@ -51,23 +54,24 @@ namespace Witchgame
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         }
 
-        private void CalculateJumpVelocity()
+        private void CalculateJumpParameters()
         {
-            float timeToApex = Mathf.Sqrt(2 * jumpHeight / gravityForce);
-            jumpSpeed = gravityForce * timeToApex;
+            gravity = -(2 * jumpHeight) / Mathf.Pow(jumpTimeToApex, 2);
+            jumpVelocity = Mathf.Abs(gravity) * jumpTimeToApex;
+            rb.gravityScale = Mathf.Abs(gravity) / Physics2D.gravity.magnitude;
         }
 
         private void Update()
         {
             HandleMovement();
+            HandleJumpInput();
             HandleCasting();
         }
 
         private void FixedUpdate()
         {
-            ApplyMovement();
-            HandleJumping();
-            HandleFalling();
+            ApplyJump();
+            ApplyGravity();
         }
 
         private void HandleMovement()
@@ -75,8 +79,9 @@ namespace Witchgame
             Vector2 input = inputController.move;
             float targetSpeed = input.x * maxSpeed;
             float speedDifference = targetSpeed - rb.velocity.x;
-            float accelerationRate = Mathf.Abs(targetSpeed) > 0.01f ? accelerationSpeed : decelerationSpeed;
-            float movement = Mathf.Pow(Mathf.Abs(speedDifference) * accelerationRate, 2) * Mathf.Sign(speedDifference);
+
+            float accelerationRate = (Mathf.Abs(targetSpeed) > 0.01f) ? accelerationSpeed : decelerationSpeed;
+            float movement = Mathf.Pow(Mathf.Abs(speedDifference) * accelerationRate, 0.96f) * Mathf.Sign(speedDifference);
 
             rb.AddForce(movement * Vector2.right);
 
@@ -93,34 +98,17 @@ namespace Witchgame
             }
         }
 
-        private void ApplyMovement()
-        {
-            Vector2 input = inputController.move;
-            float targetSpeed = input.x * maxSpeed;
-            float speedDifference = targetSpeed - rb.velocity.x;
-            float accelerationRate = Mathf.Abs(targetSpeed) > 0.01f ? accelerationSpeed : decelerationSpeed;
-            float movement = Mathf.Pow(Mathf.Abs(speedDifference) * accelerationRate, 2) * Mathf.Sign(speedDifference);
-
-            rb.AddForce(movement * Vector2.right);
-
-            if (Mathf.Abs(input.x) < 0.01f && Mathf.Abs(rb.velocity.x) < 0.1f)
-            {
-                rb.velocity = new Vector2(0, rb.velocity.y);
-            }
-        }
-
-        private void HandleJumping()
+        private void HandleJumpInput()
         {
             if (groundChecker.isGrounded)
             {
                 coyoteTimeCounter = coyoteTime;
+                isJumping = false;
                 isFalling = false;
-                anim.SetBool("isFalling", false);
-                anim.SetBool("isJumping", false);
             }
             else
             {
-                coyoteTimeCounter -= Time.fixedDeltaTime;
+                coyoteTimeCounter -= Time.deltaTime;
             }
 
             if (inputController.jump)
@@ -129,50 +117,45 @@ namespace Witchgame
             }
             else
             {
-                jumpBufferCounter -= Time.fixedDeltaTime;
+                jumpBufferCounter -= Time.deltaTime;
             }
+        }
 
-            if (coyoteTimeCounter > 0f && jumpBufferCounter > 0f && canJump)
+        private void ApplyJump()
+        {
+            if (coyoteTimeCounter > 0f && jumpBufferCounter > 0f && canJump && !isJumping)
             {
-                rb.velocity = new Vector2(rb.velocity.x, jumpSpeed);
+                rb.velocity = new Vector2(rb.velocity.x, jumpVelocity * jumpForceMultiplier);
                 jumpBufferCounter = 0f;
                 isJumping = true;
+                isFalling = false;
                 anim.SetBool("isJumping", true);
+                anim.SetBool("isFalling", false);
             }
 
-            if (isJumping && !inputController.jump && rb.velocity.y > 0)
+            if (!inputController.jump && rb.velocity.y > 0)
             {
-                rb.velocity += Vector2.down * gravityForce * quickFallMultiplier * Time.fixedDeltaTime;
+                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
             }
 
-            if (isJumping && rb.velocity.y < 0)
+            if (rb.velocity.y < 0 && !groundChecker.isGrounded)
             {
-                isJumping = false;
                 isFalling = true;
+                isJumping = false;
                 anim.SetBool("isJumping", false);
                 anim.SetBool("isFalling", true);
             }
         }
 
-        private void HandleFalling()
+        private void ApplyGravity()
         {
-            if (!groundChecker.isGrounded && rb.velocity.y < 0)
+            if (rb.velocity.y < 0)
             {
-                isFalling = true;
-                isJumping = false;
-                anim.SetBool("isJumping", false);
-                anim.SetBool("isFalling", true);
+                rb.velocity += Vector2.up * gravity * (fallMultiplier - 1) * Time.deltaTime;
             }
-
-            if (groundChecker.isGrounded && isFalling)
+            else if (rb.velocity.y > 0 && !inputController.jump)
             {
-                isFalling = false;
-                anim.SetBool("isFalling", false);
-            }
-
-            if (isFalling)
-            {
-                rb.velocity += Vector2.down * gravityForce * Time.fixedDeltaTime;
+                rb.velocity += Vector2.up * gravity * (lowJumpMultiplier - 1) * Time.deltaTime;
             }
         }
 
@@ -182,17 +165,21 @@ namespace Witchgame
             {
                 isCastingSpell = true;
                 anim.SetBool("isCastingSpell", true);
-
-                int castState = groundChecker.isGrounded ? 0 : 1;
-                anim.SetFloat("CastState", castState);
-
                 inputController.spell = false;
             }
-            else if (isCastingSpell && !inputController.spell)
+
+            if (isCastingSpell)
             {
-                isCastingSpell = false;
-                anim.SetBool("isCastingSpell", false);
+                AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+                anim.SetFloat("CastingState", groundChecker.isGrounded ? 0f : 1f);
+
+                if (stateInfo.IsName("CastSpell") && stateInfo.normalizedTime >= 1f)
+                {
+                    isCastingSpell = false;
+                    anim.SetBool("isCastingSpell", false);
+                }
             }
         }
+
     }
 }

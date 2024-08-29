@@ -862,14 +862,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2f4b42474202eb4384797234ee0c82d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  accelerationSpeed: 2
+  accelerationSpeed: 1.5
   maxSpeed: 4
   decelerationSpeed: 2
-  jumpHeight: 5
-  gravityForce: 5
-  coyoteTime: 0.15
+  jumpHeight: 2
+  jumpTimeToApex: 0.4
+  jumpForceMultiplier: 1.5
+  fallMultiplier: 2.5
+  lowJumpMultiplier: 2
+  coyoteTime: 0.2
   jumpBufferTime: 0.1
-  quickFallMultiplier: 2
   canJump: 1
   canCastSpell: 1
 --- !u!114 &705885060
