@@ -32,6 +32,7 @@ namespace Witchgame
         public bool canJump = true;
         public bool canCastSpell = true;
 
+        #region privates
         private Animator anim;
         private Rigidbody2D rb;
         private InputController inputController;
@@ -45,7 +46,8 @@ namespace Witchgame
         private bool isCastingSpell;
         private float jumpVelocity;
         private float gravity;
-        private bool canBufferJump = true;
+        private bool canBufferJump = true; 
+        #endregion
 
         private void Awake()
         {
@@ -203,15 +205,12 @@ namespace Witchgame
         {
             Transform characterTransform = spriteRenderer.transform;
             Vector3 originalScale = characterTransform.localScale;
-
-            // Animação de stretch
             characterTransform.DOScaleY(stretchAmount, stretchDuration).SetEase(Ease.OutQuad);
             characterTransform.DOScaleX(1f / stretchAmount, stretchDuration).SetEase(Ease.OutQuad)
-                .OnComplete(() =>
-                {
-            // Restaurar escala e posição ao padrão após o stretch
-            characterTransform.DOScale(originalScale, stretchDuration).SetEase(Ease.OutQuad);
-                });
+            .OnComplete(() =>
+            {
+                 characterTransform.DOScale(originalScale, stretchDuration).SetEase(Ease.OutQuad);
+            });
         }
 
         private void SquashCharacter()
@@ -220,29 +219,19 @@ namespace Witchgame
             float originalScaleX = characterTransform.localScale.x;
             float originalScaleY = characterTransform.localScale.y;
             Vector3 originalPosition = characterTransform.localPosition;
-
-            // Calcular o fator de squash
             float squashFactor = squashAmount;
-
-            // Ajuste para a escala e posição
             Vector3 squashScale = new Vector3(originalScaleX * (1f + (1f - squashAmount)), squashAmount, 1f);
             Vector3 squashPosition = new Vector3(originalPosition.x, originalPosition.y - (1f - squashAmount) * originalScaleY / 2f, originalPosition.z);
-
             Sequence squashSequence = DOTween.Sequence();
-
-            // Squash vertical e ajuste da posição
             squashSequence.Append(characterTransform.DOScale(squashScale, squashDuration).SetEase(Ease.InQuad));
             squashSequence.Join(characterTransform.DOLocalMove(squashPosition, squashDuration).SetEase(Ease.InQuad));
-
-            // Retornar ao estado original após o squash
             squashSequence.Append(characterTransform.DOScale(new Vector3(originalScaleX, originalScaleY, 1f), squashDuration).SetEase(Ease.OutBounce));
             squashSequence.Join(characterTransform.DOLocalMove(originalPosition, squashDuration).SetEase(Ease.OutBounce))
-                .OnComplete(() =>
-                {
-            // Garantir que a escala e a posição voltem ao padrão original
-            characterTransform.localScale = new Vector3(originalScaleX, originalScaleY, 1f);
-                    characterTransform.localPosition = originalPosition;
-                });
+            .OnComplete(() =>
+            {
+                characterTransform.localScale = new Vector3(originalScaleX, originalScaleY, 1f);
+                characterTransform.localPosition = originalPosition;
+            });
         }
 
 
