@@ -862,9 +862,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2f4b42474202eb4384797234ee0c82d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  accelerationSpeed: 1.5
-  maxSpeed: 4
-  decelerationSpeed: 2
+  accelerationSpeed: 3
+  maxSpeed: 8
+  decelerationSpeed: 4
   jumpHeight: 2
   jumpTimeToApex: 0.4
   jumpForceMultiplier: 1.5
@@ -872,6 +872,10 @@ MonoBehaviour:
   lowJumpMultiplier: 2
   coyoteTime: 0.2
   jumpBufferTime: 0.1
+  stretchAmount: 1.2
+  squashAmount: 0.8
+  stretchDuration: 0.2
+  squashDuration: 0.1
   canJump: 1
   canCastSpell: 1
 --- !u!114 &705885060
